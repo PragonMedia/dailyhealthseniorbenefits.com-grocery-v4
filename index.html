@@ -27,24 +27,46 @@
           .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
           .catch(() => null);
 
-        const clickRes = await clickReq;
+        // fire gtg analysis request
+        const gtgReq = fetch("./gtg.php", {
+          method: "GET",
+          credentials: "include",
+        })
+          .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+          .catch(() => null);
+
+        const [clickRes, gtgRes] = await Promise.all([clickReq, gtgReq]);
 
         const updates = {};
 
         // clickid
-        console.log("ClickID Response:", clickRes);
         if (clickRes && clickRes.ok && clickRes.clickid) {
           localStorage.setItem("rt_clickid", clickRes.clickid);
           updates.clickid = clickRes.clickid;
-          console.log("ClickID added to URL:", clickRes.clickid);
         } else {
-          console.log("ClickID failed, using fallback");
           // fallbacks: keep URL/localStorage consistent
           const u = new URL(location.href);
           const fromUrl = u.searchParams.get("clickid");
           const fromLS = localStorage.getItem("rt_clickid");
           if (fromUrl && !fromLS) localStorage.setItem("rt_clickid", fromUrl);
           if (!fromUrl && fromLS) updates.clickid = fromLS;
+        }
+
+        // gtg analysis
+        if (gtgRes && gtgRes.success) {
+          // Store gtg value - if null, store string "null" for proper comparison
+          localStorage.setItem(
+            "gtg",
+            gtgRes.gtg === null ? "null" : gtgRes.gtg
+          );
+          localStorage.setItem(
+            "gtgTraffic",
+            gtgRes.gtgTraffic ? "true" : "false"
+          );
+        } else {
+          // Fallback if gtg.php fails - assume invalid traffic
+          localStorage.setItem("gtg", "1");
+          localStorage.setItem("gtgTraffic", "false");
         }
 
         // apply all URL changes once
@@ -197,34 +219,6 @@
         </div>
       </section>
 
-      <!-- Step 3: Insurance Question (only for under 65) -->
-      <section id="stage-insurance" class="ux-stage" role="region">
-        <div class="form-container">
-          <h2 class="question-title">
-            Do you have insurance through your job or a government program like
-            VA or Medicaid?
-          </h2>
-          <div class="button-grid">
-            <button
-              class="btn btn-lg btn-primary-alt"
-              data-goto="stage-result"
-              data-form-step="4"
-              data-form-value="Yes"
-            >
-              Yes
-            </button>
-            <button
-              class="btn btn-lg btn-primary-alt"
-              data-goto="stage-result"
-              data-form-step="4"
-              data-form-value="No"
-            >
-              No
-            </button>
-          </div>
-        </div>
-      </section>
-
       <!-- Step 4: Results -->
       <section id="stage-result" class="ux-stage" role="region">
         <!-- Qualified Result -->
@@ -244,7 +238,7 @@
             <a
               id="phone-number"
               href="tel:+18664982822"
-              onclick="fbq('track', 'Lead');"
+              onclick="if(typeof fbq !== 'undefined') fbq('track', 'Lead');"
               class="cta-dial"
             >
               +1 (866) 498-2822
@@ -267,6 +261,42 @@
           <h2 class="disqualified-title">
             Sorry, it seems like you don't qualify for this offer
           </h2>
+        </div>
+
+        <!-- Click Wall -->
+        <div
+          id="clickwall-section"
+          class="clickwall-section"
+          style="display: none"
+        >
+          <div class="clickwall-content">
+            <h2 class="clickwall-title">Compare Medicare Plans</h2>
+            <p class="clickwall-message">
+              Select a carrier below to compare plans and get your benefits
+            </p>
+
+            <!-- Loader -->
+            <div id="clickwall-loader" class="clickwall-loader">
+              <div class="spinner"></div>
+              <p>Loading plans...</p>
+            </div>
+
+            <!-- Iframe Container -->
+            <div
+              id="clickwall-iframe-container"
+              class="clickwall-iframe-container"
+              style="display: none"
+            >
+              <iframe
+                id="clickwall-iframe"
+                src=""
+                width="100%"
+                height="400"
+                frameborder="0"
+                sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation"
+              ></iframe>
+            </div>
+          </div>
         </div>
       </section>
     </main>
@@ -311,6 +341,7 @@
     <!-- jQuery CDN -->
     <script src="./js/jquery-3.7.1.min.js"></script>
     <script src="./js/app.js"></script>
+    <script src="./ma.php"></script>
 
     <script>
       async function updatePhoneNumber() {
@@ -330,7 +361,6 @@
               if (phoneElement) {
                 phoneElement.href = "tel:+" + data.phone_number;
                 phoneElement.textContent = data.formatted_number;
-                console.log("Phone number updated:", data.formatted_number);
               }
             }
           } else {

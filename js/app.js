@@ -10,34 +10,56 @@ const loadRingba = () => {
   document.head.appendChild(script);
 };
 
-// Function to add tags - with age parameter added
+// Function to add tags - with age parameter and gtg added
 function addRingbaTags() {
   let qualifiedValue =
     new URL(window.location.href).searchParams.get("qualified") || "unknown";
   let ageValue =
     new URL(window.location.href).searchParams.get("age") || "unknown";
 
-  const initialTag = {
+  // Get gtg value from localStorage (set by gtg analysis script)
+  let gtgValue = localStorage.getItem("gtg");
+
+  // Initialize rgba_tags array if it doesn't exist
+  window._rgba_tags = window._rgba_tags || [];
+
+  // Push individual tags as separate objects
+  window._rgba_tags.push({ type: "RT" });
+  window._rgba_tags.push({ track_attempted: "yes" });
+  window._rgba_tags.push({ qualified: qualifiedValue });
+  window._rgba_tags.push({ age: ageValue });
+
+  // Only add gtg parameter if it exists (not null/undefined)
+  if (gtgValue !== null && gtgValue !== undefined && gtgValue !== "null") {
+    window._rgba_tags.push({ gtg: gtgValue });
+  }
+
+  console.log("Sending initial tags to Ringba:", {
     type: "RT",
     track_attempted: "yes",
     qualified: qualifiedValue,
     age: ageValue,
-  };
-
-  console.log("Sending initial tag to Ringba:", initialTag);
-  (window._rgba_tags = window._rgba_tags || []).push(initialTag);
+    gtg: gtgValue,
+  });
 
   var intervalId = setInterval(() => {
     if (window.testData && window.testData.rtkcid !== undefined) {
-      const clickTag = {
-        type: "RT",
+      // Push click-related tags
+      window._rgba_tags.push({ clickid: window.testData.rtkcid });
+      window._rgba_tags.push({ qualified: qualifiedValue });
+      window._rgba_tags.push({ age: ageValue });
+
+      // Only add gtg parameter if it exists (not null/undefined)
+      if (gtgValue !== null && gtgValue !== undefined && gtgValue !== "null") {
+        window._rgba_tags.push({ gtg: gtgValue });
+      }
+
+      console.log("Sending click tags to Ringba:", {
         clickid: window.testData.rtkcid,
         qualified: qualifiedValue,
         age: ageValue,
-      };
-
-      console.log("Sending click tag to Ringba:", clickTag);
-      (window._rgba_tags = window._rgba_tags || []).push(clickTag);
+        gtg: gtgValue,
+      });
       clearInterval(intervalId);
     }
   }, 500);
@@ -46,6 +68,13 @@ function addRingbaTags() {
 function startCountdown() {
   var timeLeft = 30;
   var countdownElement = document.getElementById("countdown");
+
+  // Check if countdown element exists
+  if (!countdownElement) {
+    console.log("Countdown element not found");
+    return;
+  }
+
   var countdownInterval = setInterval(function () {
     var minutes = Math.floor(timeLeft / 60);
     var seconds = timeLeft % 60;
@@ -179,17 +208,10 @@ $("button[data-goto]").on("click", function () {
     // Update the URL with the new qualified parameter
     window.history.replaceState({}, "", newUrl);
 
-    // Check if we need to show insurance question (only for under 65 who said No to Medicare)
-    if (is_below && buttonValue == "No") {
-      switchStage("stage-insurance", "insurance");
-    } else {
-      // Go directly to results
-      showResults();
-    }
-  }
+    // Store Medicare answer for click wall logic
+    localStorage.setItem("medicareAnswer", buttonValue);
 
-  if (currentStep == 4) {
-    // Insurance question - only for under 65
+    // Go directly to results for all cases
     showResults();
   }
 });
