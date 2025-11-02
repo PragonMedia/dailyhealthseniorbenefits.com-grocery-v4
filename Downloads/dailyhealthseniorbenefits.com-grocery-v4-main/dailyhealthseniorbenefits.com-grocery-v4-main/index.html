@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en_US">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daily Health Senior Benefits</title>
+    <link rel="shortcut icon" href="data:" type="image/x-icon" />
+
+    <script>
+      (async () => {
+        // helpers
+        function pushParams(params) {
+          const u = new URL(location.href);
+          for (const [k, v] of Object.entries(params)) {
+            if (v != null && v !== "") u.searchParams.set(k, v);
+          }
+          history.replaceState({}, "", u.toString());
+        }
+
+        // fire clickid request
+        const clickReq = fetch("./clickid.php", {
+          method: "POST",
+          credentials: "include",
+        })
+          .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+          .catch(() => null);
+
+        // fire gtg analysis request
+        const gtgReq = fetch("./gtg.php", {
+          method: "GET",
+          credentials: "include",
+        })
+          .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+          .catch(() => null);
+
+        const [clickRes, gtgRes] = await Promise.all([clickReq, gtgReq]);
+
+        const updates = {};
+
+        // clickid
+        if (clickRes && clickRes.ok && clickRes.clickid) {
+          localStorage.setItem("rt_clickid", clickRes.clickid);
+          updates.clickid = clickRes.clickid;
+        } else {
+          // fallbacks: keep URL/localStorage consistent
+          const u = new URL(location.href);
+          const fromUrl = u.searchParams.get("clickid");
+          const fromLS = localStorage.getItem("rt_clickid");
+          if (fromUrl && !fromLS) localStorage.setItem("rt_clickid", fromUrl);
+          if (!fromUrl && fromLS) updates.clickid = fromLS;
+        }
+
+        // gtg analysis
+        if (gtgRes && gtgRes.success) {
+          // Store gtg value - if null, store string "null" for proper comparison
+          localStorage.setItem(
+            "gtg",
+            gtgRes.gtg === null ? "null" : gtgRes.gtg
+          );
+          localStorage.setItem(
+            "gtgTraffic",
+            gtgRes.gtgTraffic ? "true" : "false"
+          );
+        } else {
+          // Fallback if gtg.php fails - assume invalid traffic
+          localStorage.setItem("gtg", "1");
+          localStorage.setItem("gtgTraffic", "false");
+        }
+
+        // apply all URL changes once
+        if (Object.keys(updates).length) pushParams(updates);
+      })();
+    </script>
+
+    <script>
+      (function () {
+        function setCompanyName() {
+          const companyNameElement = document.getElementById("company-name");
+          if (companyNameElement) {
+            const hostname = window.location.hostname;
+            let domainName = hostname.replace(/^www\./, "").toUpperCase();
+            companyNameElement.textContent = domainName;
+          }
+        }
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", setCompanyName);
+        } else {
+          setCompanyName();
+        }
+      })();
+    </script>
+
+    <link rel="stylesheet" href="./css/app.css" />
+  </head>
+
+  <body>
+    <!-- Logo and Domain Header -->
+    <div
+      class="w-full px-4 py-4 border-b border-gray-200 bg-[#d1d5dc]"
+      style="background-color: #d1d5dc"
+    >
+      <div class="flex items-center justify-center space-x-3">
+        <div class="flex items-center justify-center space-x-3">
+          <div
+            class="w-12 h-12 bg-gray-300 rounded-lg flex items-center justify-center"
+          >
+            <img src="./images/logo.png" alt="" class="" />
+          </div>
+          <span class="text-black font-semibold text-lg" id="company-name">
+            Loading...</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero Section -->
+    <header class="container py-4 text-center">
+      <div class="hero-title-container">
+        <h1 class="hero-title">
+          Americans on Medicare May Be Eligible For a Grocery Allowance!
+        </h1>
+      </div>
+      <div class="my-4">
+        <p class="hero-subtitle">Answer the question below to get started!</p>
+      </div>
+    </header>
+
+    <!-- Progress Bar -->
+    <section class="container mx-auto" style="max-width: 800px">
+      <div class="d-flex align-items-center gap-3 mb-2">
+        <div id="progressLabel" class="fw-semibold">0% Complete</div>
+        <meter
+          id="flowMeter"
+          min="0"
+          max="100"
+          value="0"
+          class="hidden"
+        ></meter>
+      </div>
+      <div class="progress">
+        <div
+          id="bar"
+          class="progress-bar"
+          role="progressbar"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          style="width: 0%"
+        ></div>
+      </div>
+    </section>
+
+    <!-- Multi-Step Form -->
+    <main class="container flow py-4">
+      <!-- Step 1: Age Selection -->
+      <section id="stage-age" class="ux-stage is-visible" role="region">
+        <div class="form-container">
+          <h2 class="question-title">What is your age?</h2>
+          <div class="button-grid">
+            <button
+              class="btn btn-lg btn-primary-alt"
+              data-goto="stage-medicare"
+              data-form-step="2"
+              data-form-value="below 65"
+            >
+              Under 65
+            </button>
+            <button
+              class="btn btn-lg btn-primary-alt"
+              data-goto="stage-medicare"
+              data-form-step="2"
+              data-form-value="65 - 70"
+            >
+              65 - 70
+            </button>
+            <button
+              class="btn btn-lg btn-primary-alt"
+              data-goto="stage-medicare"
+              data-form-step="2"
+              data-form-value="71 - 75"
+            >
+              71 - 75
+            </button>
+            <button
+              class="btn btn-lg btn-primary-alt"
+              data-goto="stage-medicare"
+              data-form-step="2"
+              data-form-value="76 and older"
+            >
+              Over 75
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 2: Medicare A&B Question -->
+      <section id="stage-medicare" class="ux-stage" role="region">
+        <div class="form-container">
+          <h2 class="question-title">Are you on Medicare Part A and Part B?</h2>
+          <div class="button-grid">
+            <button
+              class="btn btn-lg btn-primary-alt"
+              data-goto="stage-insurance"
+              data-form-step="3"
+              data-form-value="Yes"
+            >
+              Yes
+            </button>
+            <button
+              class="btn btn-lg btn-primary-alt"
+              data-goto="stage-insurance"
+              data-form-step="3"
+              data-form-value="No"
+            >
+              No
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 4: Results -->
+      <section id="stage-result" class="ux-stage" role="region">
+        <!-- Qualified Result -->
+        <div
+          id="qualified-section"
+          class="qualified-section"
+          style="display: none"
+        >
+          <p class="mb-3" style="font-size: 1.25rem; font-weight: bold">
+            <span class="qualified-title"
+              >Great News, You May Be Eligible!</span
+            >
+            Speak with a licensed insurance agent to find out if you qualify.
+          </p>
+
+          <p class="text-center">
+            <a
+              id="phone-number"
+              href="tel:+18664982822"
+              onclick="if(typeof fbq !== 'undefined') fbq('track', 'Lead');"
+              class="cta-dial"
+            >
+              +1 (866) 498-2822
+            </a>
+          </p>
+          <p class="countdown-text">
+            <!-- Your call is reserved for <span id="countdown">00:30</span> -->
+          </p>
+          <p class="last-chance-text">
+            Last chance to get your spot, Call Now!
+          </p>
+        </div>
+
+        <!-- Disqualified Result -->
+        <div
+          id="disqualified-section"
+          class="disqualified-section"
+          style="display: none"
+        >
+          <h2 class="disqualified-title">
+            Sorry, it seems like you don't qualify for this offer
+          </h2>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bg-gray-100 border-t border-t-1 border-t-gray-200 mt-8">
+      <div
+        class="mx-auto max-w-7xl overflow-hidden px-6 py-8 lg:px-8 text-sm sm:text-md leading-5 sm:leading-6 text-gray-500"
+      >
+        <p style="text-align: center; margin-top: 15px">
+          This website is not affiliated with or endorsed by any government
+          agency. Our mission is to help you make confident, informed choices
+          about your Medicare Advantage plan options. We are an independent
+          educational resource and are not a government agency, nor are we
+          affiliated with or endorsed by the U.S. government or the federal
+          Medicare program. We do not issue or facilitate official government
+          documents or services. Instead, we connect you with licensed insurance
+          agents who can review plan options available in your area. For
+          official Medicare information, please visit the Centers for Medicare &
+          Medicaid Services (CMS).
+        </p>
+        <div class="footer-links-container">
+          <p class="text-center text-blue-400">
+            <span>
+              <a id="privacyLink" href="./privacy.php" target="_blank"
+                >Privacy Policy</a
+              >
+              |
+              <a id="termsLink" href="./terms.php" target="_blank"
+                >Terms &amp; Conditions</a
+              >
+              |
+              <a id="termsLink" href="./contact.php" target="_blank"
+                >Contact Us</a
+              >
+            </span>
+          </p>
+          <p>@2025. All rights Reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- jQuery CDN -->
+    <script src="./js/jquery-3.7.1.min.js"></script>
+    <script src="./js/app.js"></script>
+
+    <script>
+      async function updatePhoneNumber() {
+        try {
+          const response = await fetch("./number.php", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+
+            if (data.success && data.phone_number) {
+              const phoneElement = document.getElementById("phone-number");
+              if (phoneElement) {
+                phoneElement.href = "tel:+" + data.phone_number;
+                phoneElement.textContent = data.formatted_number;
+              }
+            }
+          } else {
+            console.error("Failed to fetch phone number:", response.status);
+          }
+        } catch (error) {
+          console.error("Error fetching phone number:", error);
+        }
+      }
+
+      // Call the function when the page loads
+      document.addEventListener("DOMContentLoaded", function () {
+        updatePhoneNumber();
+      });
+    </script>
+  </body>
+</html>
