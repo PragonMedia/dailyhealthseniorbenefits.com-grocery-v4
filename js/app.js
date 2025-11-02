@@ -208,9 +208,6 @@ $("button[data-goto]").on("click", function () {
     // Update the URL with the new qualified parameter
     window.history.replaceState({}, "", newUrl);
 
-    // Store Medicare answer for click wall logic
-    localStorage.setItem("medicareAnswer", buttonValue);
-
     // Go directly to results for all cases
     showResults();
   }
